@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data History</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        #searchInput {
+            padding: 10px;
+            width: 200px;
+            margin-bottom: 20px;
+        }
+
+        #pagination {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #pagination button {
+            padding: 10px;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Data History</h1>
+
+    <div>
+        <input type="text" id="searchInput" placeholder="Nhập giá trị để tìm kiếm..." onkeyup="filterTable()">
+        <button onclick="filterTable()">Tìm kiếm</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Temperature (°C)</th>
+                <th>Humidity (%)</th>
+                <th>Light (lux)</th>
+                <th>Thời gian</th>
+            </tr>
+        </thead>
+        <tbody id="data-body">
+            <!-- Dữ liệu sẽ được chèn vào đây -->
+        </tbody>
+    </table>
+
+    <div id="pagination">
+        <button id="prevButton" onclick="changePage(-1)">Previous</button>
+        <span id="pageDisplay">1</span>
+        <button id="nextButton" onclick="changePage(1)">Next</button>
+    </div>
+</div>
+
+<script>
+    let tableSensorData = [];
+    let currentPage = 1;
+    const rowsPerPage = 13; // Giới hạn số hàng hiển thị mỗi trang là 13
+    let filteredData = [];
+
+    // Hàm lấy dữ liệu từ API
+    function fetchData() {
+        fetch('http://127.0.0.1:5500/get_data')
+            .then(response => response.json())
+            .then(data => {
+                if (data) {
+                    const newRow = {
+                        id: tableSensorData.length + 1, 
+                        device: data.device,
+                        hoat_dong: data.hoat_dong,
+                        humidity: data.humidity,
+                        light: data.light,
+                        temperature: data.temperature,
+                        thoi_gian: getCurrentTime() // Lấy thời gian hiện tại
+                    };
+
+                    tableSensorData.push(newRow);
+                    displayTable();  // Gọi lại displayTable khi có dữ liệu mới
+                } else {
+                    throw new Error('Dữ liệu không hợp lệ');
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi khi lấy dữ liệu từ API:', error);
+                alert('Lỗi khi lấy dữ liệu từ API');
+            });
+    }
+
+    // Gọi fetchData mỗi 3 giây
+    setInterval(fetchData, 3000);
+
+    // Hàm lấy thời gian hiện tại theo định dạng "YYYY-MM-DD HH:MM:SS"
+    function getCurrentTime() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+
+    // Hiển thị dữ liệu lên bảng
+    function displayTable() {
+        const tableBody = document.getElementById('data-body');
+        tableBody.innerHTML = ''; // Xóa dữ liệu cũ
+
+        // Xác định phạm vi dữ liệu cần hiển thị
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        const paginatedData = filteredData.length ? filteredData.slice(start, end) : tableSensorData.slice(start, end);
+
+        if (paginatedData.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="4">Không tìm thấy dữ liệu phù hợp</td></tr>`;
+            return;
+        }
+
+        // Thêm từng dòng vào bảng
+        paginatedData.forEach(row => appendRow(row));
+
+        // Cập nhật số trang
+        const totalPages = Math.ceil((filteredData.length || tableSensorData.length) / rowsPerPage);
+        document.getElementById('pageDisplay').textContent = `${currentPage} / ${totalPages}`;
+    }
+
+    // Thêm một dòng vào bảng
+    function appendRow(row) {
+        const tableBody = document.getElementById('data-body');
+        const tr = document.createElement('tr');
+        
+        tr.innerHTML = `
+            <td>${row.temperature}</td>
+            <td>${row.humidity}</td>
+            <td>${row.light}</td>
+            <td>${row.thoi_gian}</td>
+        `;
+
+        tableBody.appendChild(tr);
+    }
+
+    // Chuyển trang
+    function changePage(direction) {
+        const totalPages = Math.ceil((filteredData.length || tableSensorData.length) / rowsPerPage);
+        currentPage += direction;
+        if (currentPage < 1) currentPage = 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        displayTable();
+    }
+
+    // Hàm tìm kiếm và sắp xếp ưu tiên kết quả tìm được
+    function filterTable() {
+        const searchInput = document.getElementById("searchInput").value.toLowerCase();
+        
+        // Lọc dữ liệu theo từ khóa tìm kiếm
+        const foundData = tableSensorData.filter(row => {
+            return row.device.toLowerCase().includes(searchInput) ||
+               row.hoat_dong.toLowerCase().includes(searchInput) ||
+               row.humidity.toString().includes(searchInput) ||
+               row.light.toString().includes(searchInput) ||
+               row.temperature.toString().includes(searchInput) ||
+               row.thoi_gian.toLowerCase().includes(searchInput);
+        });
+
+        // Lọc dữ liệu không tìm thấy kết quả
+        const otherData = tableSensorData.filter(row => {
+            return !(row.device.toLowerCase().includes(searchInput) ||
+                 row.hoat_dong.toLowerCase().includes(searchInput) ||
+                 row.humidity.toString().includes(searchInput) ||
+                 row.light.toString().includes(searchInput) ||
+                 row.temperature.toString().includes(searchInput) ||
+                 row.thoi_gian.toLowerCase().includes(searchInput));
+        });
+
+        // Kết hợp các dữ liệu đã lọc, ưu tiên các kết quả tìm được
+        filteredData = [...foundData, ...otherData];
+
+        // Đặt lại trang về trang đầu tiên khi tìm kiếm
+        currentPage = 1;
+        displayTable();
+    }
+</script>
+
+</body>
+</html>

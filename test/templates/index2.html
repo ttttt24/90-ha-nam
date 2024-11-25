@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang Hiển Thị Dữ liệu</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            background-color: #fff;
+        }
+
+        .data-block {
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .time {
+            background-color: #f46c0a;
+        }
+
+        .temperature {
+            background-color: #ff6f61;
+        }
+
+        .humidity {
+            background-color: #4db6ac;
+        }
+
+        .light {
+            background-color: #ffd54f;
+        }
+
+        .chart-container {
+            margin-top: 15px;
+        }
+
+        .page-title {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 50px;
+            font-weight: bold;
+            color: #000;
+        }
+
+        /* Side Menu Styling */
+        .side-menu {
+            background-color: #fff;
+            padding: 20px
+            border-radius: 10px;
+            text-align: center;
+            position: absolute;
+            top:10%;
+            left: 0;
+            width:15%;
+        }
+
+        .side-menu ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .side-menu ul li {
+            padding: 10px 0;
+            border-bottom: 0px solid #444;
+        }
+
+        .side-menu ul li a {
+            color: #000;
+            text-decoration: none;
+            font-size: 20px; /* Increase font size */
+            display: block;
+            font-weight: bold;
+        }
+
+        .side-menu ul li:hover {
+            background-color: #4db6ac;
+        }
+
+        .control-block {
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 10px;
+            background-color: #6af38e;
+            color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-block h2 {
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .control-block button {
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="side-menu">
+        <ul>
+            <li><a href="/profile">Profile</a></li>
+            <li><a href="/history" target="_blank">Lịch sử Dữ liệu</a></li> <!-- Mở trong tab mới -->
+            <li><a href="/activity" target="_blank">Lịch sử Hoạt động</a></li> <!-- Mở trong tab mới -->
+            <li><a href="/new">Lượng Mưa</a></li>
+        </ul>
+        
+    </div>
+    <div class="container">
+        <div class="page-title text-center my-4">Hiển Thị Dữ Liệu</div>
+        <div class="row">
+            <div class="col-md-3">
+                <div class="data-block time">
+                    <h2>Thời Gian</h2>
+                    <i class="fas fa-clock"></i>
+                    <p id="time-display"></p> 
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="data-block temperature">
+                    <h2>Nhiệt độ</h2>
+                    <i class="fas fa-thermometer-half"></i>
+                    <p id="temperature-display"></p> 
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="data-block humidity">
+                    <h2>Độ ẩm</h2>
+                    <i class="fas fa-tint"></i>
+                    <p id="humidity-display"></p> 
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="data-block light">
+                    <h2>Ánh sáng</h2>
+                    <i class="fas fa-sun"></i>
+                    <p id="light-display"></p> 
+                </div>
+            </div>
+        </div>
+       
+        <div class="row chart-container">
+            <div class="col-md-6">
+                <canvas id="temperatureChart"></canvas>
+            </div>
+            <div class="col-md-6">
+                <canvas id="lightChart"></canvas>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <canvas id="humidityChart"></canvas>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="control-block text-center">
+                    <h2>Điều khiển Quạt</h2>
+                    <i class="fas fa-fan fa-2x"></i>
+                    <button class="btn btn-primary" onclick="controlLed(1,'on')">Bật</button>
+                    <button class="btn btn-danger" onclick="controlLed(1,'off')">Tắt</button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="control-block text-center">
+                    <h2>Điều khiển Đèn 1</h2>
+                    <i class="fas fa-lightbulb fa-2x"></i>
+                    <button class="btn btn-primary" onclick="controlLed(2,'on')">Bật</button>
+                    <button class="btn btn-danger" onclick="controlLed(2,'off')">Tắt</button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="control-block text-center">
+                    <h2>Điều khiển Đèn 2</h2>
+                    <i class="fas fa-lightbulb fa-2x"></i>
+                    <button class="btn btn-primary" onclick="controlLed(3,'on')">Bật</button>
+                    <button class="btn btn-danger" onclick="controlLed(3,'off')">Tắt</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Link thu vien -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // luu du lieu
+            let temperatureData = [];
+            let lightData = [];
+            let humidityData = [];
+            let timestamps = [];
+
+            // Ham la du lieu tu API
+            function fetchData() {
+                fetch('http://127.0.0.1:5500/get_data') // dia chi api
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Ktra du lieu duoc lay k
+                        if (data) {
+                            // update noi dung vào HTML 
+                            document.getElementById('temperature-display').textContent = ` ${data.temperature} °C`;
+                            document.getElementById('humidity-display').textContent = ` ${data.humidity}%`;
+                            document.getElementById('light-display').textContent = ` ${data.light} lux`;
+                            document.getElementById('time-display').textContent = data.time.slice(11,26); // updated time
+
+                            // updated bieu do
+                            updateCharts(data);
+                        } else {
+                            console.error('No data received from API');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Có lỗi xảy ra:', error);
+                    });
+            }
+
+            // Lay data
+            fetchData();
+            
+            // delay 5 giay
+            setInterval(fetchData, 5000);
+            function updateCharts(data) {
+    // update charts
+    temperatureData.push(data.temperature);
+    lightData.push(data.light);
+    humidityData.push(data.humidity);
+    let timeFormatted = data.time.slice(17, 26); // Lay tu chuoi tgian gtri tu 11 den 16 la gio vs phut
+    timestamps.push(timeFormatted);
+
+    if (temperatureData.length > 10) {
+        temperatureData.shift();  
+    }
+    if (lightData.length > 10) {
+        lightData.shift();
+    }
+    if (humidityData.length > 10) {
+        humidityData.shift();
+    }
+    if (timestamps.length > 10) {
+        timestamps.shift();
+    }
+
+    // updated bieu do nhiet
+    const temperatureChartCtx = document.getElementById('temperatureChart').getContext('2d');
+    if (temperatureChartCtx.chart) {
+        temperatureChartCtx.chart.data.labels = timestamps;
+        temperatureChartCtx.chart.data.datasets[0].data = temperatureData;
+        temperatureChartCtx.chart.update();
+    } else {
+        temperatureChartCtx.chart = new Chart(temperatureChartCtx, {
+            type: 'line',
+            data: {
+                labels: timestamps,
+                datasets: [{
+                    label: 'Nhiệt độ',
+                    data: temperatureData,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1,
+                    fill: false
+                }]
+            }
+        });
+    }
+
+    // updated bieu do anh sang
+    const lightChartCtx = document.getElementById('lightChart').getContext('2d');
+    if (lightChartCtx.chart) {
+        lightChartCtx.chart.data.labels = timestamps;
+        lightChartCtx.chart.data.datasets[0].data = lightData;
+        lightChartCtx.chart.update();
+    } else {
+        lightChartCtx.chart = new Chart(lightChartCtx, {
+            type: 'line',
+            data: {
+                labels: timestamps,
+                datasets: [{
+                    label: 'Ánh sáng',
+                    data: lightData,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1,
+                    fill: false
+                }]
+            }
+        });
+    }
+
+    // update bieu do do am
+    const humidityChartCtx = document.getElementById('humidityChart').getContext('2d');
+    if (humidityChartCtx.chart) {
+        humidityChartCtx.chart.data.labels = timestamps;
+        humidityChartCtx.chart.data.datasets[0].data = humidityData;
+        humidityChartCtx.chart.update();
+    } else {
+        humidityChartCtx.chart = new Chart(humidityChartCtx, {
+            type: 'line',
+            data: {
+                labels: timestamps,
+                datasets: [{
+                    label: 'Độ ẩm',
+                    data: humidityData,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1,
+                    fill: false
+                }]
+            }
+        });
+    }
+}         
+     });
+     function controlLed(ledNumber, state) { 
+        fetch(`http://localhost:5000/led/` + ledNumber + `/` + state, {
+            method: 'GET'
+        })
+        .then(response => response.text())
+        .then(data => console.log(data))
+        .catch(error => console.error('Error:', error));
+    }
+    
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+</body>
+</html>
