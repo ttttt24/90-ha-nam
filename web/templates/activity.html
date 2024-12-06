@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Status</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        #searchInput {
+            padding: 10px;
+            width: 200px;
+            margin-bottom: 20px;
+        }
+
+        #pagination {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #pagination button {
+            padding: 10px;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Device Status</h1>
+
+    <div>
+        <input type="text" id="searchInput" placeholder="Nhập giá trị để tìm kiếm..." >
+        <button onclick="filterTable()">Tìm kiếm</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Device</th>
+                <th>Hoạt động</th>
+                <th>Thời gian</th>
+            </tr>
+        </thead>
+        <tbody id="data-body">
+            <!-- Dữ liệu sẽ được chèn vào đây -->
+        </tbody>
+    </table>
+
+    <div id="pagination">
+        <button id="prevButton" onclick="changePage(-1)">Previous</button>
+        <span id="pageDisplay">1</span>
+        <button id="nextButton" onclick="changePage(1)">Next</button>
+    </div>
+</div>
+
+<script>
+    let tableDeviceData = [];
+    let currentPage = 1;
+    const rowsPerPage = 10; // Số hàng hiển thị mỗi trang
+    let filteredData = [];
+    
+    // Hàm lấy dữ liệu từ API
+    function fetchData() {
+        fetch('http://127.0.0.1:5500/get_data')
+            .then(response => response.json())
+            .then(data => {
+                if (data) {
+                    const newRow = {
+                        device: data.device,
+                        hoat_dong: data.hoat_dong.toLowerCase() === 'on' ? 'On' : 'Off', // Chuyển đổi trạng thái
+                        thoi_gian: formatTime(data.time) // Định dạng thời gian
+                    };
+                    tableDeviceData.push(newRow); // Lưu dữ liệu vào mảng chính
+                    displayTable(); // Cập nhật bảng
+                } else {
+                    throw new Error('Dữ liệu không hợp lệ từ API');
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi khi lấy dữ liệu từ API:', error);
+            });
+    }
+    
+    // Gọi fetchData mỗi 2 giây
+    setInterval(fetchData, 2000);
+    
+    // Hàm định dạng thời gian từ GMT
+    function formatTime(gmtTime) {
+        const date = new Date(gmtTime);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+    
+    // Hiển thị dữ liệu lên bảng
+    function displayTable() {
+        const tableBody = document.getElementById('data-body');
+        tableBody.innerHTML = ''; // Xóa nội dung cũ
+    
+        // Xác định dữ liệu hiển thị theo trang
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        const paginatedData = filteredData.length ? filteredData.slice(start, end) : tableDeviceData.slice(start, end);
+    
+        if (paginatedData.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="3">Không tìm thấy dữ liệu phù hợp</td></tr>`;
+            return;
+        }
+    
+        // Thêm từng dòng vào bảng
+        paginatedData.forEach(row => appendRow(row));
+    
+        // Cập nhật số trang
+        const totalPages = Math.ceil((filteredData.length || tableDeviceData.length) / rowsPerPage);
+        document.getElementById('pageDisplay').textContent = `${currentPage} / ${totalPages}`;
+    }
+    
+    // Hàm thêm dòng vào bảng
+    function appendRow(row) {
+        const tableBody = document.getElementById('data-body');
+        const tr = document.createElement('tr');
+    
+        tr.innerHTML = `
+            <td>${row.device}</td>
+            <td>${row.hoat_dong}</td>
+            <td>${row.thoi_gian}</td>
+        `;
+    
+        tableBody.appendChild(tr);
+    }
+    
+    // Chuyển trang
+    function changePage(direction) {
+        const totalPages = Math.ceil((filteredData.length || tableDeviceData.length) / rowsPerPage);
+        currentPage += direction;
+        if (currentPage < 1) currentPage = 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        displayTable();
+    }
+    
+    // Hàm tìm kiếm và ưu tiên hiển thị kết quả tìm được
+   // Hàm tìm kiếm và ưu tiên hiển thị kết quả tìm được
+function filterTable() {
+    const searchInput = document.getElementById('searchInput').value.toLowerCase();
+
+    // Lọc dữ liệu theo từ khóa
+    const foundData = tableDeviceData.filter(row => {
+        return row.device.toLowerCase().includes(searchInput) ||
+               row.hoat_dong.toLowerCase().includes(searchInput) ||
+               row.thoi_gian.toLowerCase().includes(searchInput);
+    });
+
+    // Lọc dữ liệu không khớp
+    const otherData = tableDeviceData.filter(row => {
+        return !(row.device.toLowerCase().includes(searchInput) ||
+                 row.hoat_dong.toLowerCase().includes(searchInput) ||
+                 row.thoi_gian.toLowerCase().includes(searchInput));
+    });
+
+    // Kết hợp dữ liệu, ưu tiên hiển thị kết quả tìm kiếm
+    filteredData = [...foundData, ...otherData];
+
+    // Đặt lại trang về đầu khi tìm kiếm
+    currentPage = 1;
+    displayTable();
+}
+    
+</script>
+
+</body>
+</html>

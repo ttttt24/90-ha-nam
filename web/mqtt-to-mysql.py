@@ -4,7 +4,7 @@ from mysql.connector import Error
 import json
 
 # Cấu hình MQTT
-mqtt_host = '192.168.231.46'
+mqtt_host = '192.168.167.46'
 mqtt_port = 2003
 mqtt_user = 'tutran'
 mqtt_password = '1234'
@@ -22,7 +22,7 @@ def on_message(client, userdata, msg):
     print(f"Nhận được tin nhắn từ chủ đề {msg.topic}: {msg.payload.decode()}")
 
     try:
-        #  dữ liệu nhận được
+        # Dữ liệu nhận được
         received_data = msg.payload.decode()
         print(f"Dữ liệu nhận được: {received_data}")
 
@@ -36,7 +36,7 @@ def on_message(client, userdata, msg):
         temperature = None
         humidity = None
         light = None
-        rainfall = None
+        wind = None  # Đổi rainfall thành wind
 
         for part in data_parts:
             key, value = part.split(': ')
@@ -46,11 +46,11 @@ def on_message(client, userdata, msg):
                 humidity = int(value.replace('%', '').strip())  
             elif key == 'Anhsang':
                 light = int(value.replace(' Lux', '').strip())  
-            elif key == 'Luongmua':
-                rainfall = int(value.replace(' mm', '').strip())  
+            elif key == 'wind':  # Nếu dữ liệu từ MQTT vẫn gửi "Luongmua"
+                wind = int(value.replace(' m/s', '').strip())  
 
         # Kiểm tra xem tất cả các giá trị đã được lấy
-        if temperature is None or humidity is None or light is None or rainfall is None:
+        if temperature is None or humidity is None or light is None or wind is None:
             print("Thiếu dữ liệu cần thiết từ tin nhắn.")
             return
 
@@ -63,8 +63,8 @@ def on_message(client, userdata, msg):
         )
         if connection.is_connected():
             cursor = connection.cursor()
-            sql_insert_query = """INSERT INTO sensor_data (temperature, humidity, light, rainfall) VALUES (%s, %s, %s, %s)"""
-            cursor.execute(sql_insert_query, (temperature, humidity, light, rainfall))
+            sql_insert_query = """INSERT INTO sensor_data (temperature, humidity, light, wind) VALUES (%s, %s, %s, %s)"""
+            cursor.execute(sql_insert_query, (temperature, humidity, light, wind))
             connection.commit()
             print("Dữ liệu đã được chèn vào MySQL.")
     except ValueError as ve:

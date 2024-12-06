@@ -6,7 +6,7 @@ from datetime import datetime
 # khoi tao Flask app
 app = Flask(__name__)
 
-mqtt_host = "192.168.231.46"
+mqtt_host = "192.168.167.46"
 mqtt_port = 2003
 mqtt_topic_in = "in"
 

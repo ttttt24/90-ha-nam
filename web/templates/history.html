@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Device Status</title>
+    <title>Data History</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -26,7 +26,7 @@
 
         th, td {
             padding: 10px;
-            text-align: center;
+            text-align: left;
             border: 1px solid #ddd;
         }
 
@@ -55,18 +55,20 @@
 <body>
 
 <div class="container">
-    <h1>Device Status</h1>
+    <h1>Data History</h1>
 
     <div>
-        <input type="text" id="searchInput" placeholder="Nhập giá trị để tìm kiếm..." onkeyup="filterTable()">
+        <input type="text" id="searchInput" placeholder="Nhập giá trị để tìm kiếm...">
         <button onclick="filterTable()">Tìm kiếm</button>
     </div>
 
     <table>
         <thead>
             <tr>
-                <th>Device</th>
-                <th>Hoạt động</th>
+                <th>Temperature (°C)</th>
+                <th>Humidity (%)</th>
+                <th>Light (lux)</th>
+                <th>Wind (m/s)</th>
                 <th>Thời gian</th>
             </tr>
         </thead>
@@ -83,11 +85,11 @@
 </div>
 
 <script>
-    let tableDeviceData = [];
+    let tableSensorData = [];
     let currentPage = 1;
-    const rowsPerPage = 10; // Số hàng hiển thị mỗi trang
+    const rowsPerPage = 13; // Giới hạn số hàng hiển thị mỗi trang là 13
     let filteredData = [];
-    
+
     // Hàm lấy dữ liệu từ API
     function fetchData() {
         fetch('http://127.0.0.1:5500/get_data')
@@ -95,109 +97,110 @@
             .then(data => {
                 if (data) {
                     const newRow = {
+                        id: tableSensorData.length + 1,
                         device: data.device,
-                        hoat_dong: data.hoat_dong.toLowerCase() === 'on' ? 'On' : 'Off', // Chuyển đổi trạng thái
-                        thoi_gian: formatTime(data.time) // Định dạng thời gian
+                        hoat_dong: data.hoat_dong,
+                        humidity: data.humidity,
+                        light: data.light,
+                        temperature: data.temperature,
+                        wind: Math.floor(Math.random() * 101), // Tạo giá trị ngẫu nhiên từ 0 - 100 m/s
+                        thoi_gian: getCurrentTime() // Lấy thời gian hiện tại
                     };
-                    tableDeviceData.push(newRow); // Lưu dữ liệu vào mảng chính
-                    displayTable(); // Cập nhật bảng
+
+                    tableSensorData.push(newRow);
+                    displayTable();  // Gọi lại displayTable khi có dữ liệu mới
                 } else {
-                    throw new Error('Dữ liệu không hợp lệ từ API');
+                    throw new Error('Dữ liệu không hợp lệ');
                 }
             })
             .catch(error => {
                 console.error('Lỗi khi lấy dữ liệu từ API:', error);
+                alert('Lỗi khi lấy dữ liệu từ API');
             });
     }
-    
-    // Gọi fetchData mỗi 2 giây
-    setInterval(fetchData, 2000);
-    
-    // Hàm định dạng thời gian từ GMT
-    function formatTime(gmtTime) {
-        const date = new Date(gmtTime);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        const seconds = String(date.getSeconds()).padStart(2, '0');
+
+    // Gọi fetchData mỗi 5 giây
+    setInterval(fetchData, 5000);
+
+    // Hàm lấy thời gian hiện tại theo định dạng "Y-M-D H:M:S"
+    function getCurrentTime() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
         return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     }
-    
+
     // Hiển thị dữ liệu lên bảng
     function displayTable() {
         const tableBody = document.getElementById('data-body');
-        tableBody.innerHTML = ''; // Xóa nội dung cũ
-    
-        // Xác định dữ liệu hiển thị theo trang
+        tableBody.innerHTML = ''; // Xóa dữ liệu cũ
+
+        // Xác định phạm vi dữ liệu cần hiển thị
         const start = (currentPage - 1) * rowsPerPage;
         const end = start + rowsPerPage;
-        const paginatedData = filteredData.length ? filteredData.slice(start, end) : tableDeviceData.slice(start, end);
-    
+        const paginatedData = filteredData.length ? filteredData.slice(start, end) : tableSensorData.slice(start, end);
+
         if (paginatedData.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="3">Không tìm thấy dữ liệu phù hợp</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="5">Không tìm thấy dữ liệu phù hợp</td></tr>`;
             return;
         }
-    
+
         // Thêm từng dòng vào bảng
         paginatedData.forEach(row => appendRow(row));
-    
+
         // Cập nhật số trang
-        const totalPages = Math.ceil((filteredData.length || tableDeviceData.length) / rowsPerPage);
+        const totalPages = Math.ceil((filteredData.length || tableSensorData.length) / rowsPerPage);
         document.getElementById('pageDisplay').textContent = `${currentPage} / ${totalPages}`;
     }
-    
-    // Hàm thêm dòng vào bảng
+
+    // Thêm một dòng vào bảng
     function appendRow(row) {
         const tableBody = document.getElementById('data-body');
         const tr = document.createElement('tr');
-    
+        
         tr.innerHTML = `
-            <td>${row.device}</td>
-            <td>${row.hoat_dong}</td>
+            <td>${row.temperature}</td>
+            <td>${row.humidity}</td>
+            <td>${row.light}</td>
+            <td>${row.wind}</td>
             <td>${row.thoi_gian}</td>
         `;
-    
+
         tableBody.appendChild(tr);
     }
-    
+
     // Chuyển trang
     function changePage(direction) {
-        const totalPages = Math.ceil((filteredData.length || tableDeviceData.length) / rowsPerPage);
+        const totalPages = Math.ceil((filteredData.length || tableSensorData.length) / rowsPerPage);
         currentPage += direction;
         if (currentPage < 1) currentPage = 1;
         if (currentPage > totalPages) currentPage = totalPages;
         displayTable();
     }
-    
-    // Hàm tìm kiếm và ưu tiên hiển thị kết quả tìm được
-   // Hàm tìm kiếm và ưu tiên hiển thị kết quả tìm được
-function filterTable() {
-    const searchInput = document.getElementById('searchInput').value.toLowerCase();
 
-    // Lọc dữ liệu theo từ khóa
-    const foundData = tableDeviceData.filter(row => {
-        return row.device.toLowerCase().includes(searchInput) ||
+    // Hàm tìm kiếm và sắp xếp ưu tiên kết quả tìm được
+    function filterTable() {
+        const searchInput = document.getElementById("searchInput").value.toLowerCase();
+        
+        // Lọc dữ liệu theo từ khóa tìm kiếm
+        const foundData = tableSensorData.filter(row => {
+            return row.device.toLowerCase().includes(searchInput) ||
                row.hoat_dong.toLowerCase().includes(searchInput) ||
+               row.humidity.toString().includes(searchInput) ||
+               row.light.toString().includes(searchInput) ||
+               row.wind.toString().includes(searchInput) || // Tìm kiếm cho wind
+               row.temperature.toString().includes(searchInput) ||
                row.thoi_gian.toLowerCase().includes(searchInput);
-    });
+        });
 
-    // Lọc dữ liệu không khớp
-    const otherData = tableDeviceData.filter(row => {
-        return !(row.device.toLowerCase().includes(searchInput) ||
-                 row.hoat_dong.toLowerCase().includes(searchInput) ||
-                 row.thoi_gian.toLowerCase().includes(searchInput));
-    });
-
-    // Kết hợp dữ liệu, ưu tiên hiển thị kết quả tìm kiếm
-    filteredData = [...foundData, ...otherData];
-
-    // Đặt lại trang về đầu khi tìm kiếm
-    currentPage = 1;
-    displayTable();
-}
-    
+        filteredData = foundData;
+        currentPage = 1; // Đặt lại trang về trang đầu tiên khi tìm kiếm
+        displayTable();
+    }
 </script>
 
 </body>

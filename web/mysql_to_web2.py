@@ -31,7 +31,7 @@ def get_data():
         cursor1 = connection1.cursor()
         cursor2 = connection2.cursor()
 
-        cursor1.execute("SELECT temperature, humidity, light, rainfall, thoigian FROM du_lieu.sensor_data ORDER BY id DESC LIMIT 1")
+        cursor1.execute("SELECT temperature, humidity, light, wind, thoigian FROM du_lieu.sensor_data ORDER BY id DESC LIMIT 1")
         sensor_data = cursor1.fetchone()
 
         cursor2.execute("SELECT device, hoat_dong, thoi_gian FROM device.device_status ORDER BY id DESC LIMIT 1")
@@ -46,7 +46,7 @@ def get_data():
                 "humidity": sensor_data[1],
                 "light": sensor_data[2],
                 "temperature": sensor_data[0],
-                "rainfall": sensor_data[3],
+                "wind": sensor_data[3],
                 "time": sensor_data[4]
             })
         else:
